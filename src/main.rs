@@ -1,18 +1,21 @@
 use bevy::{prelude::*, render::camera::Camera};
-use bevy_rapier2d::prelude::*;
+use bevy_rapier2d::{
+    na::{Isometry2, Vector2},
+    prelude::*,
+};
 
 #[derive(Debug)]
 struct Player;
 
 fn main() {
     App::build()
-        .add_plugins(DefaultPlugins)
         .insert_resource(WindowDescriptor {
             title: "Super Corgo Run!".to_string(),
             width: 1280.0,
             height: 720.0,
             ..Default::default()
         })
+        .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::rgb(
             0.04, 0.04, 0.1,
         )))
@@ -20,6 +23,10 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
         )
         .add_plugin(RapierRenderPlugin)
+        .insert_resource(RapierConfiguration {
+            scale: 25.0,
+            ..Default::default()
+        })
         .add_startup_system(setup.system())
         .add_startup_system(setup_physics.system())
         .add_system(print_ball_altitude.system())
@@ -42,7 +49,7 @@ fn setup_physics(
 ) {
     /* Create the ground. */
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(10000.0, 0.1),
+        shape: ColliderShape::cuboid(1000.0, 0.1),
         ..Default::default()
     };
     commands.spawn_bundle(collider).insert_bundle(
@@ -52,6 +59,24 @@ fn setup_physics(
             ..Default::default()
         },
     );
+
+    /* Create the ground #2. */
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(10.0, 0.1),
+        position: ColliderPosition(Isometry2::new(
+            Vector2::new(10.0, 5.0),
+            0.0,
+        )),
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(collider)
+        .insert_bundle(SpriteBundle {
+            material: materials.add(Color::WHITE.into()),
+            sprite: Sprite::new(Vec2::new(250.0, 5.0)),
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete);
 
     /* Create the bouncing ball. */
     let rigid_body = RigidBodyBundle {
@@ -64,7 +89,7 @@ fn setup_physics(
     };
     let collider = ColliderBundle {
         // shape: ColliderShape::ball(50.0),
-        shape: ColliderShape::cuboid(50.0, 50.0),
+        shape: ColliderShape::cuboid(2.0, 2.0),
         material: ColliderMaterial {
             restitution: 0.0,
             ..Default::default()
@@ -86,11 +111,6 @@ fn setup_physics(
     commands
         .spawn_bundle(rigid_body)
         .insert_bundle(collider)
-        // .insert_bundle(SpriteBundle {
-        //     material: materials.add(Color::BLUE.into()),
-        //     sprite: Sprite::new(Vec2::new(100.0, 100.0)),
-        //     ..Default::default()
-        // })
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
             transform: Transform::from_scale(Vec3::splat(
@@ -102,6 +122,7 @@ fn setup_physics(
             },
             ..Default::default()
         })
+        // .insert(RapierConfiguration::scale(25.0))
         .insert(Timer::from_seconds(0.2, true))
         .insert(RigidBodyPositionSync::Discrete)
         .insert(Player);
@@ -131,25 +152,24 @@ fn control(
         .single_mut()
         .expect("always expect a player");
     if keyboard_input.just_pressed(KeyCode::Up) {
-        dbg!("apply impulse");
         player.1.apply_impulse(
             player.2,
-            Vec2::new(1000.0, 200000.0).into(),
+            Vec2::new(0.0, 100.0).into(),
         );
     };
     if keyboard_input.pressed(KeyCode::Left) {
         player.1.apply_impulse(
             player.2,
-            Vec2::new(-100000.0, 0.0).into(),
+            Vec2::new(-20.0, 0.0).into(),
         );
-        player.3.force = Vec2::new(-100000.0, 2.0).into();
+        player.3.force = Vec2::new(-10.0, 2.0).into();
     }
     if keyboard_input.pressed(KeyCode::Right) {
         player.1.apply_impulse(
             player.2,
-            Vec2::new(100000.0, 0.0).into(),
+            Vec2::new(20.0, 0.0).into(),
         );
-        player.3.force = Vec2::new(100000.0, 2.0).into();
+        player.3.force = Vec2::new(10.0, 2.0).into();
     }
 }
 
@@ -183,7 +203,6 @@ fn side_scroll(
     mut transforms: Query<&mut Transform>,
 ) {
     if let Ok(player) = player.single() {
-        dbg!("has player");
         let camera = camera
             .single()
             .expect("there to only be one camera ever");
