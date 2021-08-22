@@ -6,6 +6,12 @@ struct Player;
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
+        .insert_resource(WindowDescriptor {
+            title: "Super Corgo Run!".to_string(),
+            width: 1280.0,
+            height: 720.0,
+            ..Default::default()
+        })
         .insert_resource(ClearColor(Color::rgb(
             0.04, 0.04, 0.1,
         )))
@@ -17,6 +23,7 @@ fn main() {
         .add_startup_system(setup_physics.system())
         .add_system(print_ball_altitude.system())
         .add_system(control.system())
+        .add_system(animate_sprite_system.system())
         .run();
 }
 
@@ -28,6 +35,8 @@ fn setup(mut commands: Commands) {
 fn setup_physics(
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     /* Create the ground. */
     let collider = ColliderBundle {
@@ -52,21 +61,46 @@ fn setup_physics(
         ..Default::default()
     };
     let collider = ColliderBundle {
-        shape: ColliderShape::ball(50.0),
+        // shape: ColliderShape::ball(50.0),
+        shape: ColliderShape::cuboid(50.0, 50.0),
         material: ColliderMaterial {
             restitution: 0.0,
             ..Default::default()
         },
         ..Default::default()
     };
+
+    let texture_handle = asset_server
+        .load("textures/party-corgi-sprites.png");
+    let texture_atlas = TextureAtlas::from_grid(
+        texture_handle,
+        Vec2::new(1724.0 / 4.0, 1385.0 / 3.0),
+        4,
+        3,
+    );
+    let texture_atlas_handle =
+        texture_atlases.add(texture_atlas);
+
     commands
         .spawn_bundle(rigid_body)
         .insert_bundle(collider)
-        .insert_bundle(SpriteBundle {
-            material: materials.add(Color::BLUE.into()),
-            sprite: Sprite::new(Vec2::new(100.0, 100.0)),
+        // .insert_bundle(SpriteBundle {
+        //     material: materials.add(Color::BLUE.into()),
+        //     sprite: Sprite::new(Vec2::new(100.0, 100.0)),
+        //     ..Default::default()
+        // })
+        .insert_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlas_handle,
+            transform: Transform::from_scale(Vec3::splat(
+                0.2,
+            )),
+            sprite: TextureAtlasSprite {
+                flip_x: true,
+                ..Default::default()
+            },
             ..Default::default()
         })
+        .insert(Timer::from_seconds(0.2, true))
         .insert(RigidBodyPositionSync::Discrete)
         .insert(Player);
 }
@@ -114,5 +148,29 @@ fn control(
             Vec2::new(100000.0, 0.0).into(),
         );
         player.3.force = Vec2::new(100000.0, 2.0).into();
+    }
+}
+
+fn animate_sprite_system(
+    time: Res<Time>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut query: Query<(
+        &mut Timer,
+        &mut TextureAtlasSprite,
+        &Handle<TextureAtlas>,
+    )>,
+) {
+    for (mut timer, mut sprite, texture_atlas_handle) in
+        query.iter_mut()
+    {
+        timer.tick(time.delta());
+        if timer.finished() {
+            let texture_atlas = texture_atlases
+                .get(texture_atlas_handle)
+                .unwrap();
+            sprite.index = ((sprite.index as usize + 1)
+                % texture_atlas.textures.len())
+                as u32;
+        }
     }
 }
