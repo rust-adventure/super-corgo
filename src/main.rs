@@ -1,6 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::Camera};
 use bevy_rapier2d::prelude::*;
 
+#[derive(Debug)]
 struct Player;
 
 fn main() {
@@ -24,6 +25,7 @@ fn main() {
         .add_system(print_ball_altitude.system())
         .add_system(control.system())
         .add_system(animate_sprite_system.system())
+        .add_system(side_scroll.system())
         .run();
 }
 
@@ -172,5 +174,30 @@ fn animate_sprite_system(
                 % texture_atlas.textures.len())
                 as u32;
         }
+    }
+}
+
+fn side_scroll(
+    camera: Query<Entity, With<Camera>>,
+    player: Query<Entity, With<Player>>,
+    mut transforms: Query<&mut Transform>,
+) {
+    if let Ok(player) = player.single() {
+        dbg!("has player");
+        let camera = camera
+            .single()
+            .expect("there to only be one camera ever");
+
+        let player_transform: Transform = transforms
+            .get_component::<Transform>(player)
+            .expect("should exist")
+            .clone();
+
+        let mut camera_transform = transforms
+            .get_mut(camera)
+            .expect("should exist");
+
+        camera_transform.translation.x =
+            player_transform.translation.x;
     }
 }
