@@ -146,6 +146,7 @@ fn control(
         &mut RigidBodyVelocity,
         &RigidBodyMassProps,
         &mut RigidBodyForces,
+        &mut TextureAtlasSprite,
     )>,
 ) {
     let mut player = player
@@ -163,6 +164,7 @@ fn control(
             Vec2::new(-20.0, 0.0).into(),
         );
         player.3.force = Vec2::new(-10.0, 2.0).into();
+        player.4.flip_x = false;
     }
     if keyboard_input.pressed(KeyCode::Right) {
         player.1.apply_impulse(
@@ -170,6 +172,7 @@ fn control(
             Vec2::new(20.0, 0.0).into(),
         );
         player.3.force = Vec2::new(10.0, 2.0).into();
+        player.4.flip_x = true;
     }
 }
 
@@ -190,9 +193,14 @@ fn animate_sprite_system(
             let texture_atlas = texture_atlases
                 .get(texture_atlas_handle)
                 .unwrap();
-            sprite.index = ((sprite.index as usize + 1)
-                % texture_atlas.textures.len())
-                as u32;
+
+            sprite.index = {
+                if sprite.index == 1 || sprite.index == 0 {
+                    texture_atlas.textures.len() as u32 - 1
+                } else {
+                    sprite.index - 1
+                }
+            }
         }
     }
 }
