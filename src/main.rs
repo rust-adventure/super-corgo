@@ -49,13 +49,13 @@ fn setup_physics(
 ) {
     /* Create the ground. */
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(1000.0, 0.1),
+        shape: ColliderShape::cuboid(10.0, 0.1),
         ..Default::default()
     };
     commands.spawn_bundle(collider).insert_bundle(
         SpriteBundle {
             material: materials.add(Color::WHITE.into()),
-            sprite: Sprite::new(Vec2::new(1000.0, 5.0)),
+            sprite: Sprite::new(Vec2::new(500.0, 5.0)),
             ..Default::default()
         },
     );
@@ -64,7 +64,7 @@ fn setup_physics(
     let collider = ColliderBundle {
         shape: ColliderShape::cuboid(10.0, 0.1),
         position: ColliderPosition(Isometry2::new(
-            Vector2::new(10.0, 5.0),
+            Vector2::new(30.0, 5.0),
             0.0,
         )),
         ..Default::default()
@@ -73,7 +73,7 @@ fn setup_physics(
         .spawn_bundle(collider)
         .insert_bundle(SpriteBundle {
             material: materials.add(Color::WHITE.into()),
-            sprite: Sprite::new(Vec2::new(250.0, 5.0)),
+            sprite: Sprite::new(Vec2::new(500.0, 5.0)),
             ..Default::default()
         })
         .insert(ColliderPositionSync::Discrete);
