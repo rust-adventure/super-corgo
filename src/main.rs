@@ -6,6 +6,7 @@ use bevy_rapier2d::{
 
 #[derive(Debug)]
 struct Player;
+struct RespawnFloor;
 
 fn main() {
     App::build()
@@ -33,6 +34,7 @@ fn main() {
         .add_system(control.system())
         .add_system(animate_sprite_system.system())
         .add_system(side_scroll.system())
+        .add_system(respawn.system())
         .run();
 }
 
@@ -78,9 +80,43 @@ fn setup_physics(
         })
         .insert(ColliderPositionSync::Discrete);
 
+    /* Create the respawn floor */
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(1000.0, 0.1),
+        position: ColliderPosition(Isometry2::new(
+            Vector2::new(0.0, -20.0),
+            0.0,
+        )),
+        flags: (ActiveEvents::CONTACT_EVENTS
+            | ActiveEvents::INTERSECTION_EVENTS)
+            .into(),
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(collider)
+        .insert_bundle(SpriteBundle {
+            material: materials.add(Color::RED.into()),
+            sprite: Sprite::new(Vec2::new(50000.0, 5.0)),
+            ..Default::default()
+        })
+        .insert(ColliderPositionSync::Discrete)
+        .insert(RespawnFloor);
+
+    spawn_player(
+        &mut commands,
+        asset_server,
+        &mut texture_atlases,
+    );
+}
+
+fn spawn_player(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
+) {
     /* Create the bouncing ball. */
     let rigid_body = RigidBodyBundle {
-        position: Vec2::new(0.0, 75.0).into(),
+        position: Vec2::new(0.0, 10.0).into(),
         mass_properties: RigidBodyMassProps {
             flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
             ..Default::default()
@@ -114,7 +150,7 @@ fn setup_physics(
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
             transform: Transform::from_scale(Vec3::splat(
-                0.2,
+                0.23,
             )),
             sprite: TextureAtlasSprite {
                 flip_x: true,
@@ -122,7 +158,6 @@ fn setup_physics(
             },
             ..Default::default()
         })
-        // .insert(RapierConfiguration::scale(25.0))
         .insert(Timer::from_seconds(0.2, true))
         .insert(RigidBodyPositionSync::Discrete)
         .insert(Player);
@@ -226,5 +261,40 @@ fn side_scroll(
 
         camera_transform.translation.x =
             player_transform.translation.x;
+    }
+}
+
+fn respawn(
+    narrow_phase: Res<NarrowPhase>,
+    floor: Query<Entity, With<RespawnFloor>>,
+    player: Query<Entity, With<Player>>,
+    mut player_position: Query<
+        &mut Transform,
+        With<Player>,
+    >,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    let entity1 = floor.single().unwrap();
+    let entity2 = player.single().unwrap();
+
+    /* Find the contact pair, if it exists, between two colliders. */
+    if let Some(contact_pair) = narrow_phase
+        .contact_pair(entity1.handle(), entity2.handle())
+    {
+        // The contact pair exists meaning that the broad-phase identified a potential contact.
+        if contact_pair.has_any_active_contact {
+            commands.entity(entity2).despawn_recursive();
+            // The contact pair has active contacts, meaning that it
+            // contains contacts for which contact forces were computed.
+            dbg!("respawnnow!");
+            // life - 1
+            spawn_player(
+                &mut commands,
+                asset_server,
+                &mut texture_atlases,
+            );
+        }
     }
 }
