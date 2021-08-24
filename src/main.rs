@@ -215,25 +215,41 @@ fn animate_sprite_system(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
     mut query: Query<(
+        Entity,
         &mut Timer,
         &mut TextureAtlasSprite,
         &Handle<TextureAtlas>,
     )>,
+    mut velocities: Query<&mut RigidBodyVelocity>,
 ) {
-    for (mut timer, mut sprite, texture_atlas_handle) in
-        query.iter_mut()
+    for (
+        entity,
+        mut timer,
+        mut sprite,
+        texture_atlas_handle,
+    ) in query.iter_mut()
     {
         timer.tick(time.delta());
-        if timer.finished() {
-            let texture_atlas = texture_atlases
-                .get(texture_atlas_handle)
-                .unwrap();
+        if let Ok(true) =
+            velocities.get_mut(entity).map(|velocity| {
+                let x_speed = velocity.linvel.data.0[0][0];
+                x_speed > 1.0 || x_speed < -1.0
+            })
+        {
+            if timer.finished() {
+                let texture_atlas = texture_atlases
+                    .get(texture_atlas_handle)
+                    .unwrap();
 
-            sprite.index = {
-                if sprite.index == 1 || sprite.index == 0 {
-                    texture_atlas.textures.len() as u32 - 1
-                } else {
-                    sprite.index - 1
+                sprite.index = {
+                    if sprite.index == 1
+                        || sprite.index == 0
+                    {
+                        texture_atlas.textures.len() as u32
+                            - 1
+                    } else {
+                        sprite.index - 1
+                    }
                 }
             }
         }
@@ -259,8 +275,11 @@ fn side_scroll(
             .get_mut(camera)
             .expect("should exist");
 
-        camera_transform.translation.x =
-            player_transform.translation.x;
+        if player_transform.translation.x < 0.0 {
+        } else {
+            camera_transform.translation.x =
+                player_transform.translation.x;
+        }
     }
 }
 
@@ -268,10 +287,6 @@ fn respawn(
     narrow_phase: Res<NarrowPhase>,
     floor: Query<Entity, With<RespawnFloor>>,
     player: Query<Entity, With<Player>>,
-    mut player_position: Query<
-        &mut Transform,
-        With<Player>,
-    >,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
@@ -288,8 +303,8 @@ fn respawn(
             commands.entity(entity2).despawn_recursive();
             // The contact pair has active contacts, meaning that it
             // contains contacts for which contact forces were computed.
-            dbg!("respawnnow!");
-            // life - 1
+
+            // TODO: game.respawns += 1
             spawn_player(
                 &mut commands,
                 asset_server,
