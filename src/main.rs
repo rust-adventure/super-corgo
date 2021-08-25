@@ -20,9 +20,10 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
-        .insert_resource(ClearColor(Color::rgb(
-            0.04, 0.04, 0.1,
-        )))
+        .add_plugin(LdtkPlugin)
+        .insert_resource(ClearColor(
+            Color::hex("DFF6F5").unwrap(),
+        ))
         .add_plugin(
             RapierPhysicsPlugin::<NoUserData>::default(),
         )
@@ -136,8 +137,8 @@ fn spawn_player(
         ..Default::default()
     };
 
-    let texture_handle = asset_server
-        .load("textures/party-corgi-sprites.png");
+    let texture_handle =
+        asset_server.load("party-corgi-sprites.png");
     let texture_atlas = TextureAtlas::from_grid(
         texture_handle,
         Vec2::new(1724.0 / 4.0, 1385.0 / 3.0),
@@ -279,6 +280,7 @@ fn side_scroll(
             .expect("should exist");
 
         if player_transform.translation.x < 0.0 {
+            camera_transform.translation.x = 0.0;
         } else {
             camera_transform.translation.x =
                 player_transform.translation.x;
@@ -316,408 +318,6 @@ fn respawn(
         }
     }
 }
-fn chunk(layer_builder: &mut LayerBuilder<TileBundle>) {
-    layer_builder
-        .set_tile(
-            UVec2::new(0, 7),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 14,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(1, 7),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 12,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(2, 7),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 13,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(3, 7),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 13,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(4, 7),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 13,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(5, 7),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 15,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(1, 6),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 32,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(1, 5),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 52,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(1, 4),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 72,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-
-    layer_builder
-        .set_tile(
-            UVec2::new(0, 3),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 101,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(1, 3),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 102,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(2, 3),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 103,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(0, 2),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 121,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(1, 2),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 122,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(2, 2),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 123,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-
-    ///---
-    layer_builder
-        .set_tile(
-            UVec2::new(8, 10),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 14,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(9, 10),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 13,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(10, 10),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 13,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(11, 10),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 13,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 10),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 12,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(13, 10),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 15,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 9),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 32,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 8),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 52,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 7),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 32,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 6),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 52,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 5),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 32,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 4),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 72,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-
-    layer_builder
-        .set_tile(
-            UVec2::new(11, 3),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 101,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 3),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 102,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(13, 3),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 103,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(11, 2),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 121,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(12, 2),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 122,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-    layer_builder
-        .set_tile(
-            UVec2::new(13, 2),
-            TileBundle {
-                tile: Tile {
-                    texture_index: 123,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        )
-        .expect("to work");
-}
 fn build_level(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -733,94 +333,113 @@ fn build_level(
         ..OrthographicCameraBundle::new_2d()
     });
 
-    let texture_handle =
-        asset_server.load("textures/tiles_packed.png");
-    let material_handle = materials
-        .add(ColorMaterial::texture(texture_handle));
+    let handle: Handle<LdtkMap> =
+        asset_server.load("super-corgo-five.ldtk");
 
-    // Create map entity and component:
     let map_entity = commands.spawn().id();
-    let mut map = Map::new(0u16, map_entity);
 
-    // Creates a new layer builder with a layer entity.
-    let (mut layer_builder, _) = LayerBuilder::new(
-        &mut commands,
-        LayerSettings::new(
-            UVec2::new(2, 2),
-            UVec2::new(8, 8),
-            Vec2::new(18.0, 18.0),
-            Vec2::new(360.0, 162.0),
-        ),
-        0u16,
-        0u16,
-    );
-    chunk(&mut layer_builder);
-    // layer_builder.set_all(TileBundle::default());
-
-    // Builds the layer.
-    // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
-    let layer_entity = map_query.build_layer(
-        &mut commands,
-        layer_builder,
-        material_handle.clone(),
-    );
-
-    // Required to keep track of layers for a map internally.
-    map.add_layer(&mut commands, 0u16, layer_entity);
-
-    // Spawn Map
-    // Required in order to use map_query to retrieve layers/tiles.
-    commands
-        .entity(map_entity)
-        .insert(map.clone())
-        .insert(Transform::from_xyz(-128.0, -128.0, 0.0))
-        .insert(GlobalTransform::default());
-
-    // Create map entity and component:
-    let map_entity = commands.spawn().id();
-    let mut map = Map::new(0u16, map_entity);
-
-    // Creates a new layer builder with a layer entity.
-    let (mut layer_builder, _) = LayerBuilder::new(
-        &mut commands,
-        LayerSettings::new(
-            UVec2::new(2, 2),
-            UVec2::new(8, 8),
-            Vec2::new(18.0, 18.0),
-            Vec2::new(360.0, 162.0),
-        ),
-        0u16,
-        0u16,
-    );
-
-    layer_builder.set_all(TileBundle {
-        tile: Tile {
-            texture_index: 5,
+    commands.entity(map_entity).insert_bundle(
+        LdtkMapBundle {
+            ldtk_map: handle,
+            map: Map::new(0u16, map_entity),
+            transform: Transform::from_xyz(
+                -(0.5 * 1920.0),
+                706.0 - (1080.0 / 2.0)
+                    + (1080.0 / 2.0) / 2.0,
+                0.0,
+            ),
             ..Default::default()
         },
-        ..Default::default()
-    });
-
-    // Builds the layer.
-    // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
-    let layer_entity = map_query.build_layer(
-        &mut commands,
-        layer_builder,
-        material_handle,
     );
 
-    // Required to keep track of layers for a map internally.
-    map.add_layer(&mut commands, 0u16, layer_entity);
+    // let texture_handle =
+    //     asset_server.load("tiles_packed.png");
+    // let material_handle = materials
+    //     .add(ColorMaterial::texture(texture_handle));
 
-    // Spawn Map
-    // Required in order to use map_query to retrieve layers/tiles.
-    commands
-        .entity(map_entity)
-        .insert(map.clone())
-        .insert(Transform::from_xyz(
-            2.0 * 18.0 * 8.0 - 128.0,
-            -128.0,
-            0.0,
-        ))
-        .insert(GlobalTransform::default());
+    // // Create map entity and component:
+    // let map_entity = commands.spawn().id();
+    // let mut map = Map::new(0u16, map_entity);
+
+    // // Creates a new layer builder with a layer entity.
+    // let (mut layer_builder, _) = LayerBuilder::new(
+    //     &mut commands,
+    //     LayerSettings::new(
+    //         UVec2::new(2, 2),
+    //         UVec2::new(8, 8),
+    //         Vec2::new(18.0, 18.0),
+    //         Vec2::new(360.0, 162.0),
+    //     ),
+    //     0u16,
+    //     0u16,
+    // );
+    // chunk(&mut layer_builder);
+    // // layer_builder.set_all(TileBundle::default());
+
+    // // Builds the layer.
+    // // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
+    // let layer_entity = map_query.build_layer(
+    //     &mut commands,
+    //     layer_builder,
+    //     material_handle.clone(),
+    // );
+
+    // // Required to keep track of layers for a map internally.
+    // map.add_layer(&mut commands, 0u16, layer_entity);
+
+    // // Spawn Map
+    // // Required in order to use map_query to retrieve layers/tiles.
+    // commands
+    //     .entity(map_entity)
+    //     .insert(map.clone())
+    //     .insert(Transform::from_xyz(-128.0, -128.0, 0.0))
+    //     .insert(GlobalTransform::default());
+
+    // // Create map entity and component:
+    // let map_entity = commands.spawn().id();
+    // let mut map = Map::new(0u16, map_entity);
+
+    // // Creates a new layer builder with a layer entity.
+    // let (mut layer_builder, _) = LayerBuilder::new(
+    //     &mut commands,
+    //     LayerSettings::new(
+    //         UVec2::new(2, 2),
+    //         UVec2::new(8, 8),
+    //         Vec2::new(18.0, 18.0),
+    //         Vec2::new(360.0, 162.0),
+    //     ),
+    //     0u16,
+    //     0u16,
+    // );
+
+    // layer_builder.set_all(TileBundle {
+    //     tile: Tile {
+    //         texture_index: 5,
+    //         ..Default::default()
+    //     },
+    //     ..Default::default()
+    // });
+
+    // // Builds the layer.
+    // // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
+    // let layer_entity = map_query.build_layer(
+    //     &mut commands,
+    //     layer_builder,
+    //     material_handle,
+    // );
+
+    // // Required to keep track of layers for a map internally.
+    // map.add_layer(&mut commands, 0u16, layer_entity);
+
+    // // Spawn Map
+    // // Required in order to use map_query to retrieve layers/tiles.
+    // commands
+    //     .entity(map_entity)
+    //     .insert(map.clone())
+    //     .insert(Transform::from_xyz(
+    //         2.0 * 18.0 * 8.0 - 128.0,
+    //         -128.0,
+    //         0.0,
+    //     ))
+    //     .insert(GlobalTransform::default());
 }

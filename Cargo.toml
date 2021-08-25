@@ -7,6 +7,9 @@ edition = "2018"
 
 [dependencies]
 bevy = "0.5.0"
-bevy_ecs_tilemap = "0.4.0"
+bevy_ecs_tilemap = { version = "0.4.0", features = ["ldtk"] }
 bevy_rapier2d = { version = "0.11.0", features = ["render"] }
 rand = "0.8.4"
+
+[replace]
+"bevy_ecs_tilemap:0.4.0" = { path = "./bevy_ecs_tilemap" }
