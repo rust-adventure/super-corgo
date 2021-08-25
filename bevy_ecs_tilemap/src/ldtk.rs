@@ -152,7 +152,6 @@ pub fn process_loaded_tile_maps(
                         continue;
                     };
 
-                    dbg!(tileset.px_wid);
                     let mut settings = LayerSettings::new(
                         map_size,
                         UVec2::new(32, 32),
@@ -180,7 +179,7 @@ pub fn process_loaded_tile_maps(
                             (tile.px[0] / default_grid_size) as u32,
                             (tile.px[1] / default_grid_size) as u32
                         );
-dbg!(&map_tile_count_y, &pos.y);
+// dbg!(&map_tile_count_y, &pos.y);
                         pos.y = map_tile_count_y - pos.y;// - 1;
 
                         layer_builder.set_tile(

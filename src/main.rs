@@ -4,11 +4,12 @@ use bevy_rapier2d::{
     na::{Isometry2, Vector2},
     prelude::*,
 };
-use rand::Rng;
+use itertools::Itertools;
 
 #[derive(Debug)]
 struct Player;
 struct RespawnFloor;
+struct ProcessedTile;
 
 fn main() {
     App::build()
@@ -33,7 +34,11 @@ fn main() {
             ..Default::default()
         })
         .add_startup_system(setup_physics.system())
-        .add_startup_system(build_level.system())
+        .add_startup_system_to_stage(
+            StartupStage::PreStartup,
+            insert_ldtk.system(),
+        )
+        .add_system(setup_colliders.system())
         .add_system(print_ball_altitude.system())
         .add_system(control.system())
         .add_system(animate_sprite_system.system())
@@ -48,41 +53,41 @@ fn setup_physics(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    /* Create the ground. */
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(2.03, 0.1),
-        position: ColliderPosition(Isometry2::new(
-            Vector2::new(-2.95, 0.5),
-            0.0,
-        )),
-        ..Default::default()
-    };
-    commands
-        .spawn_bundle(collider)
-        .insert_bundle(SpriteBundle {
-            material: materials.add(Color::NONE.into()),
-            sprite: Sprite::new(Vec2::new(106.0, 5.0)),
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete);
+    // /* Create the ground. */
+    // let collider = ColliderBundle {
+    //     shape: ColliderShape::cuboid(2.03, 0.1),
+    //     position: ColliderPosition(Isometry2::new(
+    //         Vector2::new(-2.95, 0.5),
+    //         0.0,
+    //     )),
+    //     ..Default::default()
+    // };
+    // commands
+    //     .spawn_bundle(collider)
+    //     .insert_bundle(SpriteBundle {
+    //         material: materials.add(Color::NONE.into()),
+    //         sprite: Sprite::new(Vec2::new(106.0, 5.0)),
+    //         ..Default::default()
+    //     })
+    //     .insert(ColliderPositionSync::Discrete);
 
-    /* Create the ground #2. */
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(2.03, 0.1),
-        position: ColliderPosition(Isometry2::new(
-            Vector2::new(2.8, 2.65),
-            0.0,
-        )),
-        ..Default::default()
-    };
-    commands
-        .spawn_bundle(collider)
-        .insert_bundle(SpriteBundle {
-            material: materials.add(Color::NONE.into()),
-            sprite: Sprite::new(Vec2::new(106.0, 5.0)),
-            ..Default::default()
-        })
-        .insert(ColliderPositionSync::Discrete);
+    // /* Create the ground #2. */
+    // let collider = ColliderBundle {
+    //     shape: ColliderShape::cuboid(2.03, 0.1),
+    //     position: ColliderPosition(Isometry2::new(
+    //         Vector2::new(2.8, 2.65),
+    //         0.0,
+    //     )),
+    //     ..Default::default()
+    // };
+    // commands
+    //     .spawn_bundle(collider)
+    //     .insert_bundle(SpriteBundle {
+    //         material: materials.add(Color::NONE.into()),
+    //         sprite: Sprite::new(Vec2::new(106.0, 5.0)),
+    //         ..Default::default()
+    //     })
+    //     .insert(ColliderPositionSync::Discrete);
 
     /* Create the respawn floor */
     let collider = ColliderBundle {
@@ -128,7 +133,7 @@ fn spawn_player(
         ..Default::default()
     };
     let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(0.4, 0.4),
+        shape: ColliderShape::cuboid(0.3, 0.3),
         material: ColliderMaterial {
             restitution: 0.0,
             friction: 0.0,
@@ -153,9 +158,11 @@ fn spawn_player(
         .insert_bundle(collider)
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
-            transform: Transform::from_scale(Vec3::splat(
-                0.05,
-            )),
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 1.0),
+                scale: Vec3::splat(0.03),
+                ..Default::default()
+            },
             sprite: TextureAtlasSprite {
                 flip_x: true,
                 ..Default::default()
@@ -171,10 +178,10 @@ fn print_ball_altitude(
     positions: Query<&RigidBodyPosition>,
 ) {
     for rb_pos in positions.iter() {
-        println!(
-            "Ball altitude: {}",
-            rb_pos.position.translation.vector.y
-        );
+        // println!(
+        //     "Ball altitude: {}",
+        //     rb_pos.position.translation.vector.y
+        // );
     }
 }
 
@@ -194,7 +201,7 @@ fn control(
     if keyboard_input.just_pressed(KeyCode::Up) {
         player.1.apply_impulse(
             player.2,
-            Vec2::new(0.0, 5.0).into(),
+            Vec2::new(0.0, 2.5).into(),
         );
     };
     if keyboard_input.pressed(KeyCode::Left) {
@@ -318,11 +325,11 @@ fn respawn(
         }
     }
 }
-fn build_level(
+fn insert_ldtk(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut map_query: MapQuery,
+    // mut materials: ResMut<Assets<ColorMaterial>>,
+    // mut map_query: MapQuery,
 ) {
     let camera_transform = Transform {
         scale: Vec3::new(0.5, 0.5, 1.0),
@@ -334,7 +341,7 @@ fn build_level(
     });
 
     let handle: Handle<LdtkMap> =
-        asset_server.load("super-corgo-five.ldtk");
+        asset_server.load("super-corgo.ldtk");
 
     let map_entity = commands.spawn().id();
 
@@ -351,95 +358,191 @@ fn build_level(
             ..Default::default()
         },
     );
+}
 
-    // let texture_handle =
-    //     asset_server.load("tiles_packed.png");
-    // let material_handle = materials
-    //     .add(ColorMaterial::texture(texture_handle));
+// fn setup_colliders(
+//     mut commands: Commands,
+//     // mut layer_query: Query<(Entity, &mut Layer)>,
+//     map_query: Query<(Entity, &Map)>,
+//     // mut map_events: EventReader<AssetEvent<LdtkMap>>,
+//     tiles: Query<(Entity, &Tile), Without<ProcessedTile>>,
+//     layers: Query<(Entity, &Layer)>,
+//     chunks: Query<(Entity, &Chunk)>,
+//     // maps: Res<Assets<LdtkMap>>,
+// ) {
+//     // only expecting one map, but yolo because it might not
+//     // exist yet
+//     for map in map_query.iter() {
+//         // check for layer 0u16 so that we only proceed if the ldtk
+//         // map has been processed and layers have been inserted
+//         if let Some(layer) = map.1.get_layer_entity(0u16) {
+//             // dbg!(layer);
+//             // for d in layers.iter() {
+//             //     dbg!(d.0);
+//             // }
+//             let the_layer = layers.get(*layer).unwrap();
+//             let map_size = the_layer.1.settings.map_size;
+//             for chunk_number in (0..map_size.x)
+//                 .cartesian_product(0..map_size.y)
+//             {
+//                 for chunk in
+//                     the_layer.1.get_chunk(UVec2::new(
+//                         chunk_number.0,
+//                         chunk_number.1,
+//                     ))
+//                 {
+//                     chunks
+//                         .get(chunk)
+//                         .unwrap()
+//                         .1
+//                         .for_each_tile_entity(
+//                             |(pos, tile_entity)| {
+//                                 if let Some(entity) =
+//                                     tile_entity
+//                                 {
+//                                     if let Ok((
+//                                         entity,
+//                                         tile,
+//                                     )) =
+//                                         tiles.get(*entity)
+//                                     {
+//                                         // dbg!(tile);
 
-    // // Create map entity and component:
-    // let map_entity = commands.spawn().id();
-    // let mut map = Map::new(0u16, map_entity);
+//                                         // if tile is platform, insert collider
+//                                     }
+//                                 }
+//                             },
+//                         );
+//                 }
+//             }
+//         }
+//     }
+//     // let mut changed_maps =
+//     //     Vec::<Handle<LdtkMap>>::default();
+// }
 
-    // // Creates a new layer builder with a layer entity.
-    // let (mut layer_builder, _) = LayerBuilder::new(
-    //     &mut commands,
-    //     LayerSettings::new(
-    //         UVec2::new(2, 2),
-    //         UVec2::new(8, 8),
-    //         Vec2::new(18.0, 18.0),
-    //         Vec2::new(360.0, 162.0),
-    //     ),
-    //     0u16,
-    //     0u16,
-    // );
-    // chunk(&mut layer_builder);
-    // // layer_builder.set_all(TileBundle::default());
-
-    // // Builds the layer.
-    // // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
-    // let layer_entity = map_query.build_layer(
-    //     &mut commands,
-    //     layer_builder,
-    //     material_handle.clone(),
-    // );
-
-    // // Required to keep track of layers for a map internally.
-    // map.add_layer(&mut commands, 0u16, layer_entity);
-
-    // // Spawn Map
-    // // Required in order to use map_query to retrieve layers/tiles.
-    // commands
-    //     .entity(map_entity)
-    //     .insert(map.clone())
-    //     .insert(Transform::from_xyz(-128.0, -128.0, 0.0))
-    //     .insert(GlobalTransform::default());
-
-    // // Create map entity and component:
-    // let map_entity = commands.spawn().id();
-    // let mut map = Map::new(0u16, map_entity);
-
-    // // Creates a new layer builder with a layer entity.
-    // let (mut layer_builder, _) = LayerBuilder::new(
-    //     &mut commands,
-    //     LayerSettings::new(
-    //         UVec2::new(2, 2),
-    //         UVec2::new(8, 8),
-    //         Vec2::new(18.0, 18.0),
-    //         Vec2::new(360.0, 162.0),
-    //     ),
-    //     0u16,
-    //     0u16,
-    // );
-
-    // layer_builder.set_all(TileBundle {
-    //     tile: Tile {
-    //         texture_index: 5,
-    //         ..Default::default()
-    //     },
-    //     ..Default::default()
-    // });
-
-    // // Builds the layer.
-    // // Note: Once this is called you can no longer edit the layer until a hard sync in bevy.
-    // let layer_entity = map_query.build_layer(
-    //     &mut commands,
-    //     layer_builder,
-    //     material_handle,
-    // );
-
-    // // Required to keep track of layers for a map internally.
-    // map.add_layer(&mut commands, 0u16, layer_entity);
-
-    // // Spawn Map
-    // // Required in order to use map_query to retrieve layers/tiles.
-    // commands
-    //     .entity(map_entity)
-    //     .insert(map.clone())
-    //     .insert(Transform::from_xyz(
-    //         2.0 * 18.0 * 8.0 - 128.0,
-    //         -128.0,
-    //         0.0,
-    //     ))
-    //     .insert(GlobalTransform::default());
+fn setup_colliders(
+    mut commands: Commands,
+    mut chunks: Query<
+        (Entity, &mut Chunk),
+        Without<ProcessedTile>,
+    >,
+    tiles: Query<&Tile>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for (entity, chunk) in chunks.iter_mut() {
+        let chunk_size = chunk.settings.size;
+        let chunk_pos = (
+            -(0.5 * 1920.0)
+                + chunk.settings.position.x as f32
+                    * chunk_size.x as f32
+                    * 18.0,
+            // chunk_size.x as f32
+            //     * chunk.settings.position.x as f32, //* 18.0,
+            chunk_size.y as f32 * 18.0
+                + chunk.settings.position.y as f32,
+        );
+        /// Chunk debug spawn
+        // // dbg!(chunk.settings.position);
+        // let num = if chunk.settings.position.y > 0 {
+        //     chunk.settings.position.x * 20
+        // } else {
+        //     chunk.settings.position.x * 10
+        // };
+        // commands.spawn_bundle(SpriteBundle {
+        //     material: materials.add(
+        //         Color::rgb_u8(
+        //             num as u8, num as u8, num as u8,
+        //         )
+        //         .into(),
+        //     ),
+        //     sprite: Sprite::new(Vec2::new(
+        //         chunk_size.x as f32 * 18.0,
+        //         chunk_size.y as f32 * 18.0,
+        //         // chunk_size.x as f32 * 18.0,
+        //         // chunk_size.y as f32 * 18.0,
+        //     )),
+        //     transform: Transform::from_xyz(
+        //         chunk_pos.0,
+        //         // chunk_pos.1,
+        //         chunk_size.y as f32
+        //             * chunk.settings.position.y as f32
+        //             * 18.0
+        //             + (706.0 - (1080.0 / 2.0)
+        //                 + (1080.0 / 2.0) / 2.0)
+        //             - chunk_size.y as f32 * 18.0,
+        //         0.0,
+        //     ),
+        //     ..Default::default()
+        // });
+        // println!("### {:?} {:?}", entity, chunk_pos);
+        // dbg!(chunk_pos);
+        commands.entity(entity).insert(ProcessedTile);
+        chunk.for_each_tile_entity(|(pos, tile)| {
+            if let Some(tile_entity) = tile {
+                if let Ok(tile) = tiles.get(*tile_entity) {
+                    // println!("{}: {}", pos, tile.texture_index);
+                    let px_pos = (
+                        chunk_pos.0 + pos.x as f32 * 18.0,
+                        chunk_pos.1 + pos.y as f32 * 18.0,
+                    );
+                    // println!("  at: {:?}", px_pos);
+                    if [0,1,2,3,12,13,14,15,20,21,22,23].contains(&tile.texture_index) {
+                        // let rigid_body = RigidBodyBundle {
+                        //     // position: Vec2::new(px_pos.0, 0.0).into(),
+                        //     body_type: RigidBodyType::Static,
+                        //     mass_properties: RigidBodyMassProps {
+                        //         flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
+                        //         ..Default::default()
+                        //     },
+                        //     ..Default::default()
+                        // };
+                        // let y_offset_px = 706.0 - (1080.0 / 2.0)
+                        // + (1080.0 / 2.0) / 2.0;
+                        dbg!(px_pos.1);
+                        let collider = ColliderBundle {
+                            shape: ColliderShape::cuboid(
+                                0.36, 0.36,
+                            ),
+                            material: ColliderMaterial {
+                                restitution: 0.0,
+                                friction: 0.0,
+                                ..Default::default()
+                            },
+                            position: ColliderPosition(
+                                Isometry2::new(
+                                    Vector2::new(
+                                        px_pos.0 * 0.04 + 0.37,
+                                        (0.72 * pos.y as f32) - (706.0/2.0 * 0.047) + 6.15//px_pos.1 
+                                    ),
+                                    0.0,
+                                ),
+                            ),
+                            ..Default::default()
+                        };
+                        commands.entity(*tile_entity)
+                       // .insert_bundle(rigid_body)
+                            .insert_bundle(collider)
+                            .insert_bundle(SpriteBundle {
+                                material: materials.add(
+                                    Color::NONE.into(),
+                                ),
+                                sprite: Sprite::new(
+                                    Vec2::new(
+                                        18.0, 18.0,
+                                    ),
+                                ),
+                                // transform:
+                                //     Transform::from_xyz(
+                                //         px_pos.0, px_pos.1,
+                                //         5.0,
+                                //     ),
+                                ..Default::default()
+                            })
+                            .insert(ColliderPositionSync::Discrete);
+                    }
+                };
+            }
+        })
+    }
 }
