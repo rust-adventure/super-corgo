@@ -10,6 +10,7 @@ use itertools::Itertools;
 struct Player;
 struct RespawnFloor;
 struct ProcessedTile;
+struct Coin;
 
 fn main() {
     App::build()
@@ -44,6 +45,7 @@ fn main() {
         .add_system(animate_sprite_system.system())
         .add_system(side_scroll.system())
         .add_system(respawn.system())
+        .add_system(display_intersection_info.system())
         .run();
 }
 
@@ -134,6 +136,9 @@ fn spawn_player(
     };
     let collider = ColliderBundle {
         shape: ColliderShape::cuboid(0.3, 0.3),
+        flags: (ActiveEvents::CONTACT_EVENTS
+            | ActiveEvents::INTERSECTION_EVENTS)
+            .into(),
         material: ColliderMaterial {
             restitution: 0.0,
             friction: 0.0,
@@ -341,7 +346,7 @@ fn insert_ldtk(
     });
 
     let handle: Handle<LdtkMap> =
-        asset_server.load("super-corgo.ldtk");
+        asset_server.load("super-corgo-square.ldtk");
 
     let map_entity = commands.spawn().id();
 
@@ -486,7 +491,47 @@ fn setup_colliders(
                         chunk_pos.0 + pos.x as f32 * 18.0,
                         chunk_pos.1 + pos.y as f32 * 18.0,
                     );
-                    // println!("  at: {:?}", px_pos);
+                    // 151 is coin A
+                    if [151].contains(&tile.texture_index){
+
+                        let collider = ColliderBundle {
+                            shape: ColliderShape::cuboid(
+                                0.25, 0.25,
+                            ),
+                            collider_type: ColliderType::Sensor,
+                            material: ColliderMaterial {
+                                restitution: 0.0,
+                                friction: 0.0,
+                                ..Default::default()
+                            },
+                            position: ColliderPosition(
+                                Isometry2::new(
+                                    Vector2::new(
+                                        px_pos.0 * 0.04 + 0.37,
+                                        (0.72 * pos.y as f32) - (706.0/2.0 * 0.047) + 6.15//px_pos.1 
+                                    ),
+                                    0.0,
+                                ),
+                            ),
+                            ..Default::default()
+                        };
+                        commands.entity(*tile_entity)
+                       // .insert_bundle(rigid_body)
+                            .insert_bundle(collider)
+                            .insert_bundle(SpriteBundle {
+                                material: materials.add(
+                                    Color::NONE.into(),
+                                ),
+                                sprite: Sprite::new(
+                                    Vec2::new(
+                                        18.0, 18.0,
+                                    ),
+                                ),
+                                ..Default::default()
+                            })
+                            .insert(ColliderPositionSync::Discrete)
+                            .insert(Coin);
+                    }
                     if [0,1,2,3,12,13,14,15,20,21,22,23].contains(&tile.texture_index) {
                         // let rigid_body = RigidBodyBundle {
                         //     // position: Vec2::new(px_pos.0, 0.0).into(),
@@ -544,5 +589,43 @@ fn setup_colliders(
                 };
             }
         })
+    }
+}
+
+fn display_intersection_info(
+    mut commands: Commands,
+    narrow_phase: Res<NarrowPhase>,
+    player: Query<Entity, With<Player>>,
+    mut coins: Query<
+        (Entity, &mut Tile, &UVec2),
+        With<Coin>,
+    >,
+    mut map_query: MapQuery,
+) {
+    let player = player.single().unwrap();
+    for mut coin in coins.iter_mut() {
+        /* Find the intersection pair, if it exists, between two colliders. */
+        if narrow_phase.intersection_pair(
+            player.handle(),
+            coin.0.handle(),
+        ) == Some(true)
+        {
+            println!("The player and coin {:?} have intersecting colliders!", &coin.0);
+            // coin animates up and out
+            // coin score ++
+            // (*coin.1).visible = false;
+            map_query
+                .despawn_tile(
+                    &mut commands,
+                    *coin.2,
+                    0u16,
+                    0u16,
+                )
+                .unwrap();
+            map_query
+                .notify_chunk_for_tile(*coin.2, 0u16, 0u16);
+            // let mut actual_coin = commands.entity(coin.0);
+            // actual_coin.despawn_recursive();
+        }
     }
 }
