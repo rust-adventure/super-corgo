@@ -11,6 +11,8 @@ struct Player;
 struct RespawnFloor;
 struct ProcessedTile;
 struct Coin;
+struct Spring;
+struct Spike;
 
 fn main() {
     App::build()
@@ -115,14 +117,14 @@ fn setup_physics(
 
     spawn_player(
         &mut commands,
-        asset_server,
+        &asset_server,
         &mut texture_atlases,
     );
 }
 
 fn spawn_player(
     commands: &mut Commands,
-    asset_server: Res<AssetServer>,
+    asset_server: &AssetServer,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
 ) {
     /* Create the bouncing ball. */
@@ -198,11 +200,36 @@ fn control(
         &RigidBodyMassProps,
         &mut RigidBodyForces,
         &mut TextureAtlasSprite,
+        Entity,
     )>,
+    narrow_phase: Res<NarrowPhase>,
+    mut springs: Query<(Entity, &mut Tile, &UVec2), With<Spring>>,
+    mut map_query: MapQuery,
 ) {
     let mut player = player
         .single_mut()
         .expect("always expect a player");
+
+        for mut spring in springs.iter_mut() {
+            /* Find the intersection pair, if it exists, between two colliders. */
+            if narrow_phase.intersection_pair(
+                player.5.handle(),
+                spring.0.handle(),
+            ) == Some(true)
+            {
+                player.1.apply_impulse(
+                    player.2,
+                    Vec2::new(0.0, 0.5).into(),
+                );
+                (*spring.1).texture_index = 107;
+                map_query
+                .notify_chunk_for_tile(*spring.2, 0u16, 0u16);
+            } else if spring.1.texture_index == 107 {
+                (*spring.1).texture_index = 108;
+                map_query
+                .notify_chunk_for_tile(*spring.2, 0u16, 0u16);
+            }
+        };
     if keyboard_input.just_pressed(KeyCode::Up) {
         player.1.apply_impulse(
             player.2,
@@ -307,24 +334,48 @@ fn respawn(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    spikes: Query<(Entity, &Tile, &UVec2), With<Spike>>
+
 ) {
     let entity1 = floor.single().unwrap();
-    let entity2 = player.single().unwrap();
+    let player = player.single().unwrap();
 
     /* Find the contact pair, if it exists, between two colliders. */
     if let Some(contact_pair) = narrow_phase
-        .contact_pair(entity1.handle(), entity2.handle())
+        .contact_pair(entity1.handle(), player.handle())
     {
         // The contact pair exists meaning that the broad-phase identified a potential contact.
         if contact_pair.has_any_active_contact {
-            commands.entity(entity2).despawn_recursive();
+            commands.entity(player).despawn_recursive();
+            // The contact pair has active contacts, meaning that it
+            // contains contacts for which contact forces were computed.
+
+            // TODO: game.respawns += 1
+            
+
+            spawn_player(
+                &mut commands,
+                &asset_server,
+                &mut texture_atlases,
+            );
+        }
+    }
+    for spike in spikes.iter() {
+        /* Find the intersection pair, if it exists, between two colliders. */
+        if narrow_phase.intersection_pair(
+            player.handle(),
+            spike.0.handle(),
+        ) == Some(true)
+        {
+            // reset counter ++
+            commands.entity(player).despawn_recursive();
             // The contact pair has active contacts, meaning that it
             // contains contacts for which contact forces were computed.
 
             // TODO: game.respawns += 1
             spawn_player(
                 &mut commands,
-                asset_server,
+                &asset_server,
                 &mut texture_atlases,
             );
         }
@@ -532,6 +583,86 @@ fn setup_colliders(
                             .insert(ColliderPositionSync::Discrete)
                             .insert(Coin);
                     }
+                    if [68].contains(&tile.texture_index){
+
+                        let collider = ColliderBundle {
+                            shape: ColliderShape::cuboid(
+                                0.2, 0.2,
+                            ),
+                            collider_type: ColliderType::Sensor,
+                            material: ColliderMaterial {
+                                restitution: 0.0,
+                                friction: 0.0,
+                                ..Default::default()
+                            },
+                            position: ColliderPosition(
+                                Isometry2::new(
+                                    Vector2::new(
+                                        px_pos.0 * 0.04 + 0.37,
+                                        (0.72 * pos.y as f32) - (706.0/2.0 * 0.047) + 5.8//px_pos.1 
+                                    ),
+                                    0.0,
+                                ),
+                            ),
+                            ..Default::default()
+                        };
+                        commands.entity(*tile_entity)
+                       // .insert_bundle(rigid_body)
+                            .insert_bundle(collider)
+                            .insert_bundle(SpriteBundle {
+                                material: materials.add(
+                                    Color::NONE.into(),
+                                ),
+                                sprite: Sprite::new(
+                                    Vec2::new(
+                                        18.0, 18.0,
+                                    ),
+                                ),
+                                ..Default::default()
+                            })
+                            .insert(ColliderPositionSync::Discrete)
+                            .insert(Spike);
+                    }
+                     if [108].contains(&tile.texture_index){
+                        let collider = ColliderBundle {
+                            shape: ColliderShape::cuboid(
+                                0.25, 0.20,
+                            ),
+                            collider_type: ColliderType::Sensor,
+                            material: ColliderMaterial {
+                                restitution: 0.0,
+                                friction: 0.0,
+                                ..Default::default()
+                            },
+                            position: ColliderPosition(
+                                Isometry2::new(
+                                    Vector2::new(
+                                        px_pos.0 * 0.04 + 0.37,
+                                        (0.72 * pos.y as f32) - (706.0/2.0 * 0.047) + 6.15//px_pos.1 
+                                    ),
+                                    0.0,
+                                ),
+                            ),
+                            ..Default::default()
+                        };
+                        commands.entity(*tile_entity)
+                       // .insert_bundle(rigid_body)
+                            .insert_bundle(collider)
+                            .insert_bundle(SpriteBundle {
+                                material: materials.add(
+                                    Color::NONE.into(),
+                                ),
+                                sprite: Sprite::new(
+                                    Vec2::new(
+                                        18.0, 18.0,
+                                    ),
+                                ),
+                                ..Default::default()
+                            })
+                            .insert(ColliderPositionSync::Discrete)
+                            .insert(Spring);
+                    }
+              
                     if [0,1,2,3,12,13,14,15,20,21,22,23].contains(&tile.texture_index) {
                         // let rigid_body = RigidBodyBundle {
                         //     // position: Vec2::new(px_pos.0, 0.0).into(),
@@ -596,24 +727,19 @@ fn display_intersection_info(
     mut commands: Commands,
     narrow_phase: Res<NarrowPhase>,
     player: Query<Entity, With<Player>>,
-    mut coins: Query<
-        (Entity, &mut Tile, &UVec2),
-        With<Coin>,
-    >,
+    coins: Query<(Entity, &Tile, &UVec2), With<Coin>>,
     mut map_query: MapQuery,
 ) {
     let player = player.single().unwrap();
-    for mut coin in coins.iter_mut() {
+    for coin in coins.iter() {
         /* Find the intersection pair, if it exists, between two colliders. */
         if narrow_phase.intersection_pair(
             player.handle(),
             coin.0.handle(),
         ) == Some(true)
         {
-            println!("The player and coin {:?} have intersecting colliders!", &coin.0);
             // coin animates up and out
             // coin score ++
-            // (*coin.1).visible = false;
             map_query
                 .despawn_tile(
                     &mut commands,
@@ -624,8 +750,8 @@ fn display_intersection_info(
                 .unwrap();
             map_query
                 .notify_chunk_for_tile(*coin.2, 0u16, 0u16);
-            // let mut actual_coin = commands.entity(coin.0);
-            // actual_coin.despawn_recursive();
         }
     }
+
+   
 }
