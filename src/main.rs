@@ -42,7 +42,7 @@ fn main() {
             insert_ldtk.system(),
         )
         .add_system(setup_colliders.system())
-        .add_system(print_ball_altitude.system())
+        .add_system(reveal_level.system())
         .add_system(control.system())
         .add_system(animate_sprite_system.system())
         .add_system(side_scroll.system())
@@ -129,7 +129,12 @@ fn spawn_player(
 ) {
     /* Create the bouncing ball. */
     let rigid_body = RigidBodyBundle {
-        position: Vec2::new(-4.0, 10.0).into(),
+        ccd: RigidBodyCcd { ccd_enabled: true, ..Default::default() },
+        position: Vec2::new(-4.0,1.0).into(),
+        forces: RigidBodyForces {
+            gravity_scale: 10.0,
+            ..Default::default()
+        },
         mass_properties: RigidBodyMassProps {
             flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
             ..Default::default()
@@ -181,7 +186,7 @@ fn spawn_player(
         .insert(Player);
 }
 
-fn print_ball_altitude(
+fn reveal_level(
     mut commands: Commands,
     positions: Query<&Transform, With<Player>>,
     mut map_query: MapQuery,
@@ -189,11 +194,11 @@ fn print_ball_altitude(
     for rb_pos in positions.iter() {
         let x = rb_pos.translation.x + 1920.0/2.0;
         let y = rb_pos.translation.y;//  + 706.0 - (1080.0 / 2.0) + (1080.0 / 2.0) / 2.0;
-        println!(
-            "corgi processed {}, {}",
-            (x / 18.0).round(),
-            (y / 18.0).round(),
-        );
+        // println!(
+        //     "corgi processed {}, {}",
+        //     (x / 18.0).round(),
+        //     (y / 18.0).round(),
+        // );
         // println!(
         //     "corgi: {}, {}",
         //     (x).round(),
@@ -223,7 +228,7 @@ tileid.is_some()
             pos
         }
     ).collect::<Vec<UVec2>>();
-    println!("{:?}", tiles);
+    // println!("{:?}", tiles);
 }
 }
 
@@ -241,19 +246,24 @@ fn control(
     mut springs: Query<(Entity, &mut Tile, &UVec2), With<Spring>>,
     mut map_query: MapQuery,
 ) {
-    let mut player = player
+    let ( player,
+        mut velocity,
+        mass,
+        mut forces,
+       mut sprite,
+        player_entity) = player
         .single_mut()
         .expect("always expect a player");
 
         for mut spring in springs.iter_mut() {
             /* Find the intersection pair, if it exists, between two colliders. */
             if narrow_phase.intersection_pair(
-                player.5.handle(),
+                player_entity.handle(),
                 spring.0.handle(),
             ) == Some(true)
             {
-                player.1.apply_impulse(
-                    player.2,
+                velocity.apply_impulse(
+                    mass,
                     Vec2::new(0.0, 0.5).into(),
                 );
                 (*spring.1).texture_index = 107;
@@ -266,26 +276,33 @@ fn control(
             }
         };
     if keyboard_input.just_pressed(KeyCode::Up) {
-        player.1.apply_impulse(
-            player.2,
-            Vec2::new(0.0, 2.5).into(),
+        velocity.apply_impulse(
+            mass,
+            Vec2::new(0.0, 7.5).into(),
         );
-    };
+    } else 
+    if !keyboard_input.pressed(KeyCode::Up) {
+let speed =         velocity.linvel.yy()[0];
+if speed > 0.0 {
+    forces.force = Vec2::new(0.0, -500.0).into();
+
+}
+println!("{}", speed);
+    }
     if keyboard_input.pressed(KeyCode::Left) {
-        player.1.apply_impulse(
-            player.2,
+        velocity.apply_impulse(
+            mass,
             Vec2::new(-0.1, 0.0).into(),
         );
-        player.3.force = Vec2::new(-0.5, 0.0).into();
-        player.4.flip_x = false;
+        sprite.flip_x = false;
     }
     if keyboard_input.pressed(KeyCode::Right) {
-        player.1.apply_impulse(
-            player.2,
+        velocity.apply_impulse(
+            mass,
             Vec2::new(0.1, 0.0).into(),
         );
-        player.3.force = Vec2::new(0.5, 0.0).into();
-        player.4.flip_x = true;
+        forces.force = Vec2::new(0.5, 0.0).into();
+        sprite.flip_x = true;
     }
 }
 
@@ -432,7 +449,7 @@ fn insert_ldtk(
     });
 
     let handle: Handle<LdtkMap> =
-        asset_server.load("super-corgo-fire.ldtk");
+        asset_server.load("super-corgo-fire-two.ldtk");
 
     let map_entity = commands.spawn().id();
 
