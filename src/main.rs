@@ -182,14 +182,49 @@ fn spawn_player(
 }
 
 fn print_ball_altitude(
-    positions: Query<&RigidBodyPosition>,
+    mut commands: Commands,
+    positions: Query<&Transform, With<Player>>,
+    mut map_query: MapQuery,
 ) {
     for rb_pos in positions.iter() {
+        let x = rb_pos.translation.x + 1920.0/2.0;
+        let y = rb_pos.translation.y;//  + 706.0 - (1080.0 / 2.0) + (1080.0 / 2.0) / 2.0;
+        println!(
+            "corgi processed {}, {}",
+            (x / 18.0).round(),
+            (y / 18.0).round(),
+        );
         // println!(
-        //     "Ball altitude: {}",
-        //     rb_pos.position.translation.vector.y
+        //     "corgi: {}, {}",
+        //     (x).round(),
+        //     (y).round(),
         // );
-    }
+       let tiles = map_query.get_tile_neighbors(
+           UVec2::new(
+               (x / 18.0).round() as u32,
+               ((y / 18.0).round() + 14.0) as u32),
+               0u16,
+               1u16)
+        .iter().filter(|(_pos,tileid)|{
+tileid.is_some()
+        }) .map(|tile| {
+            let pos = UVec2::new((tile.0.x) as u32,(tile.0.y  ) as u32);
+            // println!("surrounding tile: {} {}", tile.0.x, 0);
+// pos
+            map_query
+            .despawn_tile(
+                &mut commands,
+                pos,
+                0u16,
+                1u16,
+            );
+        map_query
+            .notify_chunk_for_tile(pos, 0u16, 1u16);
+            pos
+        }
+    ).collect::<Vec<UVec2>>();
+    println!("{:?}", tiles);
+}
 }
 
 fn control(
@@ -397,7 +432,7 @@ fn insert_ldtk(
     });
 
     let handle: Handle<LdtkMap> =
-        asset_server.load("super-corgo-square.ldtk");
+        asset_server.load("super-corgo-fire.ldtk");
 
     let map_entity = commands.spawn().id();
 
@@ -486,7 +521,10 @@ fn setup_colliders(
     tiles: Query<&Tile>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    for (entity, chunk) in chunks.iter_mut() {
+    for (entity, chunk) in chunks.iter_mut().filter(|(_, chunk)| {
+        chunk.settings.layer_id == 0u16
+    }) {
+        
         let chunk_size = chunk.settings.size;
         let chunk_pos = (
             -(0.5 * 1920.0)
