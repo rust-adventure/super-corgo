@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::camera::Camera};
+use bevy::{asset::HandleId, prelude::*, render::camera::Camera};
 use bevy_ecs_tilemap::prelude::*;
 use bevy_rapier2d::{
     na::{Isometry2, Vector2},
@@ -14,6 +14,9 @@ struct Coin;
 struct Spring;
 struct Spike;
 
+#[derive(Default)]
+struct HasInsertedColliders(bool);
+
 fn main() {
     App::build()
         .insert_resource(WindowDescriptor {
@@ -22,6 +25,7 @@ fn main() {
             height: 720.0,
             ..Default::default()
         })
+        .init_resource::<HasInsertedColliders>()
         .add_plugins(DefaultPlugins)
         .add_plugin(TilemapPlugin)
         .add_plugin(LdtkPlugin)
@@ -264,7 +268,7 @@ fn control(
             {
                 velocity.apply_impulse(
                     mass,
-                    Vec2::new(0.0, 0.5).into(),
+                    Vec2::new(0.0, 4.0).into(),
                 );
                 (*spring.1).texture_index = 107;
                 map_query
@@ -280,28 +284,32 @@ fn control(
             mass,
             Vec2::new(0.0, 7.5).into(),
         );
-    } else 
-    if !keyboard_input.pressed(KeyCode::Up) {
-let speed =         velocity.linvel.yy()[0];
-if speed > 0.0 {
-    forces.force = Vec2::new(0.0, -500.0).into();
+    } 
+    else 
+//     if !keyboard_input.pressed(KeyCode::Up) {
+// let speed =         velocity.linvel.yy()[0];
+// if speed > 0.0 {
+//     forces.force = Vec2::new(0.0, -500.0).into();
 
-}
-println!("{}", speed);
-    }
+// }
+// // println!("{}", speed);
+//     }
     if keyboard_input.pressed(KeyCode::Left) {
-        velocity.apply_impulse(
-            mass,
-            Vec2::new(-0.1, 0.0).into(),
-        );
+        // velocity.apply_impulse(
+        //     mass,
+        //     Vec2::new(-1.0, 0.0).into(),
+        // );
+        forces.force = Vec2::new(-5.0, 0.0).into();
+
         sprite.flip_x = false;
     }
     if keyboard_input.pressed(KeyCode::Right) {
-        velocity.apply_impulse(
-            mass,
-            Vec2::new(0.1, 0.0).into(),
-        );
-        forces.force = Vec2::new(0.5, 0.0).into();
+        // dbg!("push");
+        // velocity.apply_impulse(
+        //     mass,
+        //     Vec2::new(1.0, 0.0).into(),
+        // );
+        forces.force = Vec2::new(5.0, 0.0).into();
         sprite.flip_x = true;
     }
 }
@@ -441,6 +449,8 @@ fn insert_ldtk(
 ) {
     let camera_transform = Transform {
         scale: Vec3::new(0.5, 0.5, 1.0),
+
+        // scale: Vec3::new(5.0, 5.0, 1.0),
         ..Transform::from_xyz(0.0, 0.0, 1.0)
     };
     commands.spawn_bundle(OrthographicCameraBundle {
@@ -449,7 +459,7 @@ fn insert_ldtk(
     });
 
     let handle: Handle<LdtkMap> =
-        asset_server.load("super-corgo-fire-two.ldtk");
+        asset_server.load("super-corgo-fire.ldtk");
 
     let map_entity = commands.spawn().id();
 
@@ -478,55 +488,55 @@ fn insert_ldtk(
 //     chunks: Query<(Entity, &Chunk)>,
 //     // maps: Res<Assets<LdtkMap>>,
 // ) {
-//     // only expecting one map, but yolo because it might not
-//     // exist yet
-//     for map in map_query.iter() {
-//         // check for layer 0u16 so that we only proceed if the ldtk
-//         // map has been processed and layers have been inserted
-//         if let Some(layer) = map.1.get_layer_entity(0u16) {
-//             // dbg!(layer);
-//             // for d in layers.iter() {
-//             //     dbg!(d.0);
-//             // }
-//             let the_layer = layers.get(*layer).unwrap();
-//             let map_size = the_layer.1.settings.map_size;
-//             for chunk_number in (0..map_size.x)
-//                 .cartesian_product(0..map_size.y)
-//             {
-//                 for chunk in
-//                     the_layer.1.get_chunk(UVec2::new(
-//                         chunk_number.0,
-//                         chunk_number.1,
-//                     ))
-//                 {
-//                     chunks
-//                         .get(chunk)
-//                         .unwrap()
-//                         .1
-//                         .for_each_tile_entity(
-//                             |(pos, tile_entity)| {
-//                                 if let Some(entity) =
-//                                     tile_entity
-//                                 {
-//                                     if let Ok((
-//                                         entity,
-//                                         tile,
-//                                     )) =
-//                                         tiles.get(*entity)
-//                                     {
-//                                         // dbg!(tile);
+    // only expecting one map, but yolo because it might not
+    // exist yet
+    // for map in map_query.iter() {
+    //     // check for layer 0u16 so that we only proceed if the ldtk
+    //     // map has been processed and layers have been inserted
+    //     if let Some(layer) = map.1.get_layer_entity(0u16) {
+    //         // dbg!(layer);
+    //         // for d in layers.iter() {
+    //         //     dbg!(d.0);
+    //         // }
+    //         let the_layer = layers.get(*layer).unwrap();
+    //         let map_size = the_layer.1.settings.map_size;
+    //         for chunk_number in (0..map_size.x)
+    //             .cartesian_product(0..map_size.y)
+    //         {
+    //             for chunk in
+    //                 the_layer.1.get_chunk(UVec2::new(
+    //                     chunk_number.0,
+    //                     chunk_number.1,
+    //                 ))
+    //             {
+    //                 chunks
+    //                     .get(chunk)
+    //                     .unwrap()
+    //                     .1
+    //                     .for_each_tile_entity(
+    //                         |(pos, tile_entity)| {
+    //                             if let Some(entity) =
+    //                                 tile_entity
+    //                             {
+    //                                 if let Ok((
+    //                                     entity,
+    //                                     tile,
+    //                                 )) =
+    //                                     tiles.get(*entity)
+    //                                 {
+    //                                     // dbg!(tile);
 
-//                                         // if tile is platform, insert collider
-//                                     }
-//                                 }
-//                             },
-//                         );
-//                 }
-//             }
-//         }
-//     }
-//     // let mut changed_maps =
-//     //     Vec::<Handle<LdtkMap>>::default();
+    //                                     // if tile is platform, insert collider
+    //                                 }
+    //                             }
+    //                         },
+    //                     );
+    //             }
+    //         }
+    //     }
+    // }
+    // let mut changed_maps =
+    //     Vec::<Handle<LdtkMap>>::default();
 // }
 
 fn setup_colliders(
@@ -537,7 +547,152 @@ fn setup_colliders(
     >,
     tiles: Query<&Tile>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    ldtk_map: Res<Assets<LdtkMap>>,
+    mut has_inserted_colliders: ResMut<HasInsertedColliders>
 ) {
+// // if !has_inserted_colliders.0 {
+// //     for tile in 0..20 {
+// //     let collider = ColliderBundle {
+// //         shape: ColliderShape::cuboid(
+// //             0.36, 0.36,
+// //         ),
+// //         material: ColliderMaterial {
+// //             // restitution: 0.0,
+// //             friction: 0.0,
+// //             ..Default::default()
+// //         },
+// //         // position: ColliderPosition(
+// //         //     Isometry2::new(
+// //         //         Vector2::new(
+// //         //             px_pos.0 * 0.04 + 0.37,
+// //         //             (0.72 * pos.y as f32) - (706.0/2.0 * 0.047) + 6.15//px_pos.1 
+// //         //         ),
+// //         //         0.0,
+// //         //     ),
+// //         // ),
+// //         position: ColliderPosition(
+// //             Isometry2::new(
+// //                 Vector2::new(
+// //                     0.725 * tile as f32,//-13.3 + x *,//x * 0.03,
+// //                     0.725 * tile as f32,//(706.0 - y) * 0.05
+// //                 ),
+// //                 0.0,
+// //             ),
+// //         ),
+// //         ..Default::default()
+// //     };
+
+// //     commands//.entity(*tile_entity)
+// //         .spawn_bundle(collider)
+// //         .insert_bundle(SpriteBundle {
+// //             material: materials.add(
+// //                 Color::BLACK.into(),
+// //             ),
+// //             sprite: Sprite::new(
+// //                 Vec2::new(
+// //                     18.0, 18.0,
+// //                 ),
+// //             ),
+// //             // transform:
+// //             //     Transform::from_xyz(
+// //             //         px_pos.0, px_pos.1,
+// //             //         5.0,
+// //             //     ),
+// //             ..Default::default()
+// //         })
+// //         .insert(ColliderPositionSync::Discrete);
+// //         *has_inserted_colliders = HasInsertedColliders(true);
+// // }
+// // };
+//     if !has_inserted_colliders.0 && ldtk_map.iter().collect::<Vec<(HandleId, &LdtkMap)>>().len() > 0 {
+// let whatever = ldtk_map.iter().next().map(|(_,ldtk)| {
+//     let level = &ldtk
+//     .project
+//     .levels[0];
+// let layer_instance = &level.layer_instances.as_ref()
+// .expect("if you saved levels separately, this will be None")
+// [1];
+// let colliders = layer_instance.grid_tiles
+// .iter()
+// .filter(|tile| [0,1,2,3,12,13,14,15,20,21,22,23].contains(&tile.t))
+// .sorted_by(|a, b| match Ord::cmp(&a.px[1], &b.px[1]) {
+//     std::cmp::Ordering::Equal => Ord::cmp(&a.px[0], &b.px[0]),
+//     ordering => ordering,
+// });
+
+// for collider_group in colliders
+// .map(|t_instance| vec![(t_instance.t, t_instance.px.clone())])
+// // .collect::<Vec<(i64, Vec<i64>)>>());
+// .coalesce(|a,b| {
+//     // dbg!(&a,&b);
+//     if b[0].1[0] - 18 == a.last().unwrap().1[0] {
+//         let mut result = a.clone();
+//         result.append(&mut b.clone());
+//         Ok(result.clone())
+//     } else {
+//         Err((a,b))
+//     }
+// }) {
+//     let num_tiles = collider_group.len();
+//     let first_tile = collider_group.iter().next().unwrap();
+
+// let x =    first_tile.1[0] as f32 / 18.0; // set start of level to 0?
+// let y =    first_tile.1[1] as f32 / 18.0;
+//     println!("{:?}, {}, ({},{})",(x,y), num_tiles, x / 18.0, y / 18.0);
+//     let collider = ColliderBundle {
+//         shape: ColliderShape::cuboid(
+//             0.36 * num_tiles as f32, 0.36,
+//         ),
+//         material: ColliderMaterial {
+//             // restitution: 0.0,
+//             friction: 0.0,
+//             ..Default::default()
+//         },
+//         // position: ColliderPosition(
+//         //     Isometry2::new(
+//         //         Vector2::new(
+//         //             px_pos.0 * 0.04 + 0.37,
+//         //             (0.72 * pos.y as f32) - (706.0/2.0 * 0.047) + 6.15//px_pos.1 
+//         //         ),
+//         //         0.0,
+//         //     ),
+//         // ),
+//         position: ColliderPosition(
+//             Isometry2::new(
+//                 Vector2::new(
+//                     0.63 * x - 15.0,//-13.3 + x *,//x * 0.03,
+//                     0.63 * y,//(706.0 - y) * 0.05
+//                 ),
+//                 0.0,
+//             ),
+//         ),
+//         ..Default::default()
+//     };
+//     commands//.entity(*tile_entity)
+//         .spawn_bundle(collider)
+//         .insert_bundle(SpriteBundle {
+//             material: materials.add(
+//                 Color::BLACK.into(),
+//             ),
+//             sprite: Sprite::new(
+//                 Vec2::new(
+//                     18.0 * num_tiles as f32, 18.0,
+//                 ),
+//             ),
+//             // transform:
+//             //     Transform::from_xyz(
+//             //         px_pos.0, px_pos.1,
+//             //         5.0,
+//             //     ),
+//             ..Default::default()
+//         })
+//         .insert(ColliderPositionSync::Discrete);
+// }
+// });
+// dbg!(whatever);
+// *has_inserted_colliders = HasInsertedColliders(true);
+//     }
+
     for (entity, chunk) in chunks.iter_mut().filter(|(_, chunk)| {
         chunk.settings.layer_id == 0u16
     }) {
@@ -719,24 +874,13 @@ fn setup_colliders(
                     }
               
                     if [0,1,2,3,12,13,14,15,20,21,22,23].contains(&tile.texture_index) {
-                        // let rigid_body = RigidBodyBundle {
-                        //     // position: Vec2::new(px_pos.0, 0.0).into(),
-                        //     body_type: RigidBodyType::Static,
-                        //     mass_properties: RigidBodyMassProps {
-                        //         flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
-                        //         ..Default::default()
-                        //     },
-                        //     ..Default::default()
-                        // };
-                        // let y_offset_px = 706.0 - (1080.0 / 2.0)
-                        // + (1080.0 / 2.0) / 2.0;
-                        dbg!(px_pos.1);
+                        // dbg!(px_pos.1);
                         let collider = ColliderBundle {
                             shape: ColliderShape::cuboid(
-                                0.36, 0.36,
+                                0.4, 0.36,
                             ),
                             material: ColliderMaterial {
-                                restitution: 0.0,
+                                // restitution: 0.0,
                                 friction: 0.0,
                                 ..Default::default()
                             },
@@ -752,7 +896,6 @@ fn setup_colliders(
                             ..Default::default()
                         };
                         commands.entity(*tile_entity)
-                       // .insert_bundle(rigid_body)
                             .insert_bundle(collider)
                             .insert_bundle(SpriteBundle {
                                 material: materials.add(
